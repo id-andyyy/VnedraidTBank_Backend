@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from tpulse import TinkoffPulse
 from typing import Dict, List, Any, Optional
 
-pulse_router = APIRouter(prefix="/api/pulse", tags=["Pulse"])
+pulse_router = APIRouter()
 
 # Создаем экземпляр TinkoffPulse при запуске
 pulse_service = TinkoffPulse()

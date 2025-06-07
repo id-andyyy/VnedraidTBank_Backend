@@ -10,7 +10,7 @@ from app.models.llm import LLMResponse, LLMRequest
 # Настройка логгера
 logger = logging.getLogger(__name__)
 
-llm_router = APIRouter(prefix="/api/llm", tags=["Нейросеть"])
+llm_router = APIRouter()
 
 
 def generate_response_sync(prompt, model="deepseek-ai/DeepSeek-V3-0324", max_tokens=2024, temperature=0.7, role="user"):

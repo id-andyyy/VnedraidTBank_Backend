@@ -5,5 +5,5 @@ from app.api.routes.llm import llm_router
 main_router = APIRouter()
 
 # СЮДА ПОДКЛЮЧАТЬ РОУТЕРЫ
-main_router.include_router(pulse_router)
-main_router.include_router(llm_router)
+main_router.include_router(pulse_router, prefix="/api/pulse", tags=["Pulse 📰"])
+main_router.include_router(llm_router, prefix="/api/llm", tags=["LLM 🤖"])
