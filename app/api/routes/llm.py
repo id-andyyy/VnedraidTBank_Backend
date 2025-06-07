@@ -5,7 +5,7 @@ import json
 import logging
 from typing import Optional, List
 
-from app.models.llm import LLMResponse, LLMRequest
+from app.schemas.llm import LLMResponse, LLMRequest
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
