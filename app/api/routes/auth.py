@@ -170,4 +170,5 @@ def update_telegram_id(
     user_update = UserUpdate(telegram_id=telegram_data.telegram_id)
     user = update_user(db, current_user.id, user_update)
     
-    return user 
+    return user
+
