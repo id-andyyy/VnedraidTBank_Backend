@@ -30,21 +30,21 @@ def read_news(
     """
     query = db.query(NewsArticle)
 
-    # if filter:
-    #     conditions = []
-    #     if current_user.tags:
-    #         user_tags = [tag.strip() for tag in current_user.tags.split(',')]
-    #         conditions.append(
-    #             or_(*[NewsArticle.tags.contains(tag) for tag in user_tags]))
-    #
-    #     if current_user.tickers:
-    #         user_tickers = [ticker.strip()
-    #                         for ticker in current_user.tickers.split(',')]
-    #         conditions.append(
-    #             or_(*[NewsArticle.tickers.contains(ticker) for ticker in user_tickers]))
-    #
-    #     if conditions:
-    #         query = query.filter(or_(*conditions))
+    if filter and current_user:
+        conditions = []
+        if current_user.tags:
+            user_tags = [tag.strip() for tag in current_user.tags.split(',')]
+            conditions.append(
+                or_(*[NewsArticle.tags.contains(tag) for tag in user_tags]))
+
+        if current_user.tickers:
+            user_tickers = [ticker.strip()
+                            for ticker in current_user.tickers.split(',')]
+            conditions.append(
+                or_(*[NewsArticle.tickers.contains(ticker) for ticker in user_tickers]))
+
+        if conditions:
+            query = query.filter(or_(*conditions))
 
     news_list = query.order_by(NewsArticle.created_at.desc()).limit(top).all()
     return news_list

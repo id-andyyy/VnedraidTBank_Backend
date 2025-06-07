@@ -16,5 +16,10 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     invest_token = Column(String, nullable=True)
     telegram_id = Column(String, nullable=True)
+    tags = Column(String(500), nullable=True,
+                  comment="Теги, интересные пользователю")
+    tickers = Column(String(500), nullable=True,
+                     comment="Тикеры, интересные пользователю")
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow) 
+    updated_at = Column(DateTime, default=datetime.utcnow,
+                        onupdate=datetime.utcnow)

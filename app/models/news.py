@@ -20,6 +20,10 @@ class NewsArticle(Base):
         Text, comment="Краткое содержание статьи от LLM")
     is_positive: Mapped[bool] = mapped_column(
         Boolean, comment="Тональность новости (True - позитивная)")
+    tags: Mapped[str] = mapped_column(
+        String(500), nullable=True, comment="Теги, присвоенные LLM")
+    tickers: Mapped[str] = mapped_column(
+        String(500), nullable=True, comment="Тикеры, упомянутые в статье")
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow)
 
