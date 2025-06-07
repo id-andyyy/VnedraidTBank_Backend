@@ -11,6 +11,7 @@ class TradingViewCompanyBase(BaseModel):
     ticker: str
     company_name: str
     link: HttpUrl
+    image_url: Optional[HttpUrl] = None
     description: Optional[str] = None
     tags: Optional[str] = None
 

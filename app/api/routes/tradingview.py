@@ -7,7 +7,7 @@ import time
 from app.db.session import SessionLocal
 from app.models.tradingview import TradingViewCompany
 from app.api.routes.llm import generate_response_sync
-from app.utils.parserCompany import parse_tradingview_stocks
+from app.utils.parserCompany import parse_tradingview_stocks, get_company_image
 
 # Создаем роутер
 tradingview_router = APIRouter()
@@ -72,7 +72,19 @@ def parse_and_save_stocks_task(db: Session):
         if existing_company:
             # Если компания уже существует с описанием и тегами, пропускаем
             if existing_company.description and existing_company.tags:
-                print(f"Компания {company['ticker']} уже имеет описание и теги, пропускаем")
+                print(f"Компания {company['ticker']} уже имеет описание и теги")
+                # Проверяем, есть ли изображение
+                if not existing_company.image_url:
+                    print(f"Получаем изображение для {company['ticker']}...")
+                    image_url = get_company_image(company["link"])
+                    if image_url:
+                        existing_company.image_url = image_url
+                        print(f"  Добавлено изображение: {image_url[:100]}...")
+                        db.commit()
+                    else:
+                        print(f"  Изображение не найдено")
+                else:
+                    print(f"Компания {company['ticker']} уже имеет изображение, пропускаем")
                 continue
             else:
                 db_company = existing_company
@@ -85,6 +97,16 @@ def parse_and_save_stocks_task(db: Session):
             )
         
         print(f"[{i+1}/{len(companies_data)}] Обрабатываем {company['ticker']} - {company['company_name']}")
+        
+        # Получаем изображение компании
+        if not db_company.image_url:
+            print(f"  Получаем изображение...")
+            image_url = get_company_image(company["link"])
+            if image_url:
+                db_company.image_url = image_url
+                print(f"  Добавлено изображение: {image_url[:100]}...")
+            else:
+                print(f"  Изображение не найдено")
         
         # Генерируем описание компании через LLM
         if not db_company.description:
@@ -143,6 +165,7 @@ async def get_companies(skip: int = 0, limit: int = 100, db: Session = Depends(g
             "ticker": company.ticker,
             "company_name": company.company_name,
             "link": company.link,
+            "image_url": company.image_url,
             "description": company.description,
             "tags": company.tags,
             "created_at": company.created_at
@@ -165,6 +188,7 @@ async def get_company_by_ticker(ticker: str, db: Session = Depends(get_db)):
         "ticker": company.ticker,
         "company_name": company.company_name,
         "link": company.link,
+        "image_url": company.image_url,
         "description": company.description,
         "tags": company.tags,
         "created_at": company.created_at

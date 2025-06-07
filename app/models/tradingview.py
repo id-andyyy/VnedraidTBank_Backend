@@ -14,6 +14,7 @@ class TradingViewCompany(Base):
     ticker: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     company_name: Mapped[str] = mapped_column(String(255))
     link: Mapped[str] = mapped_column(String(255))
+    image_url: Mapped[str] = mapped_column(String(255), nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     tags: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
