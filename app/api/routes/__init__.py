@@ -7,6 +7,7 @@ from app.api.routes.llm import llm_router
 from app.api.routes.auth import auth_router
 from app.api.routes.tradingview import tradingview_router
 from app.api.routes.parsers import parsers_router
+from app.api.routes.likes import likes_router
 
 main_router = APIRouter()
 
@@ -20,6 +21,9 @@ main_router.include_router(
 main_router.include_router(
     parsers_router, prefix="/api/parsers", tags=["Parsers 🔍"]
 )
-main_router.include_router(invest_router, prefix="/api/invest", tags=["Invest 💸"])
-main_router.include_router(tradingview_router, prefix="/api/tradingview", tags=["Companies 🏢"])
+main_router.include_router(
+    invest_router, prefix="/api/invest", tags=["Invest 💸"])
+main_router.include_router(
+    tradingview_router, prefix="/api/tradingview", tags=["Companies 🏢"])
 main_router.include_router(news_router, prefix="/api/news", tags=["News 🗞️"])
+main_router.include_router(likes_router, prefix="/api", tags=["Likes 👍"])
