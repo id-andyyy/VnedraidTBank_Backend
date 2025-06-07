@@ -1,14 +1,13 @@
 import logging
+from dotenv import load_dotenv
 from sqlalchemy import inspect
 from sqlalchemy.schema import CreateTable
-from dotenv import load_dotenv
-
-# Загружаем переменные окружения из .env файла
-load_dotenv()
-
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Загружаем переменные окружения из .env файла
+load_dotenv()
 
 # Импортируем модели, чтобы они были доступны для создания таблиц
 from app.db.base_models import Base
