@@ -5,32 +5,23 @@ import json
 import logging
 from typing import Optional, List
 
+from app.models.llm import LLMResponse, LLMRequest
+
 # Настройка логгера
 logger = logging.getLogger(__name__)
 
 llm_router = APIRouter(prefix="/api/llm", tags=["Нейросеть"])
 
-# Модели данных
-class LLMRequest(BaseModel):
-    prompt: str
-    model: str = "deepseek-ai/DeepSeek-V3-0324"
-    max_tokens: int = 2024
-    temperature: float = 0.7
-    role: str = "user"
-
-class LLMResponse(BaseModel):
-    response: str
-    execution_time: float
 
 def generate_response_sync(prompt, model="deepseek-ai/DeepSeek-V3-0324", max_tokens=2024, temperature=0.7, role="user"):
     api_key = 'cpk_b9f646794b554414935934ec5a3513de.f78245306f06593ea49ef7bce2228c8e.kHJVJjyK8dtqB0oD2Ofv4AaME6MSnKDy'
     url = 'https://llm.chutes.ai/v1/chat/completions'
-    
+
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
     }
-    
+
     data = {
         'model': model,
         'messages': [
@@ -43,7 +34,7 @@ def generate_response_sync(prompt, model="deepseek-ai/DeepSeek-V3-0324", max_tok
         'max_tokens': max_tokens,
         'temperature': temperature
     }
-    
+
     full_response = ""
     response = requests.post(url, headers=headers, json=data, stream=True)
     for line in response.iter_lines():
@@ -64,14 +55,15 @@ def generate_response_sync(prompt, model="deepseek-ai/DeepSeek-V3-0324", max_tok
             except Exception as e:
                 logger.error(f"Error parsing LLM response: {str(e)}")
                 continue
-    
+
     return full_response
+
 
 @llm_router.post('', response_model=LLMResponse)
 def llm_endpoint(request: LLMRequest):
     try:
         import time
-        
+
         start_time = time.time()
         full_response = generate_response_sync(
             prompt=request.prompt,
@@ -89,4 +81,4 @@ def llm_endpoint(request: LLMRequest):
         )
     except Exception as e:
         logger.error(f"Error in LLM endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing LLM request: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error processing LLM request: {str(e)}")
