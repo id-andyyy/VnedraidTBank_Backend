@@ -8,14 +8,31 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_active_user
 from app.models import User
 from app.models.news import NewsArticle
-from app.schemas.news import NewsArticleBase
+from app.schemas.news import NewsArticleInDB
 
 news_router = APIRouter()
+
+TAG_MAP = {
+    "tag_energy": "энергетика",
+    "tag_finance": "финансы",
+    "tag_tech": "технологии",
+    "tag_industry": "промышленность",
+    "tag_consumer_sector": "потребительский сектор",
+    "tag_infrastructure": "инфраструктура",
+    "tag_agriculture": "сельское хозяйство",
+    "tag_healthcare": "здравоохранение",
+    "tag_real_estate": "недвижимость",
+    "tag_materials": "материалы",
+    "tag_telecom": "телекоммуникации",
+    "tag_entertainment": "развлечения",
+    "tag_education": "образование",
+    "tag_ecommerce": "электронная коммерция"
+}
 
 
 @news_router.get(
     "/",
-    response_model=List[NewsArticleBase]
+    response_model=List[NewsArticleInDB]
 )
 def read_news(
         db: Session = Depends(get_db),
@@ -32,10 +49,14 @@ def read_news(
 
     if filter and current_user:
         conditions = []
-        if current_user.tags:
-            user_tags = [tag.strip() for tag in current_user.tags.split(',')]
+
+        user_interested_tags = [
+            tag_name for field, tag_name in TAG_MAP.items() if getattr(current_user, field, -1) >= 0
+        ]
+
+        if user_interested_tags:
             conditions.append(
-                or_(*[NewsArticle.tags.contains(tag) for tag in user_tags]))
+                or_(*[NewsArticle.tags.contains(tag) for tag in user_interested_tags]))
 
         if current_user.tickers:
             user_tickers = [ticker.strip()
