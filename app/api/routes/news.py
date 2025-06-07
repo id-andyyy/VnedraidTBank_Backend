@@ -8,14 +8,14 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_active_user
 from app.models import User
 from app.models.news import NewsArticle
-from app.schemas.news import NewsArticleSchema
+from app.schemas.news import NewsArticleBase
 
 news_router = APIRouter()
 
 
 @news_router.get(
     "/",
-    response_model=List[NewsArticleSchema]
+    response_model=List[NewsArticleBase]
 )
 def read_news(
         db: Session = Depends(get_db),
