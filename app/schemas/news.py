@@ -6,7 +6,33 @@ from datetime import datetime
 from typing import Optional, List
 
 
-# Схема для возврата данных о новости
+# Схемы для сырых новостей
+class RawNewsBase(BaseModel):
+    title: str
+    full_text: str
+    source: str
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+
+class RawNewsCreate(RawNewsBase):
+    """
+    Схема для создания сырой новости в базе данных.
+    """
+    pass
+
+
+class RawNewsInDB(RawNewsBase):
+    """
+    Схема для чтения сырой новости из базы данных, включая ID.
+    """
+    id: int
+    created_at: datetime
+
+
+# Схемы для обработанных новостей
 class NewsArticleBase(BaseModel):
     title: str
     full_text: str

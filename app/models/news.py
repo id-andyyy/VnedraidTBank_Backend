@@ -5,6 +5,23 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
 
+class RawNews(Base):
+    """
+    Модель для хранения сырых новостей из парсеров.
+    Используется для проверки дубликатов перед обработкой.
+    """
+    __tablename__ = "raw_news"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(512), comment="Оригинальный заголовок из парсера")
+    full_text: Mapped[str] = mapped_column(Text, comment="Оригинальный текст из парсера")
+    source: Mapped[str] = mapped_column(String(100), comment="Источник новости (RBC, Investing, etc.)")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        return f"<RawNews(id={self.id}, title='{self.title[:50]}...', source='{self.source}')>"
+
+
 class NewsArticle(Base):
     """
     Модель для хранения обработанных и обогащенных новостей.
