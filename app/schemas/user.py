@@ -13,6 +13,9 @@ class UserBase(BaseModel):
 # Схема для создания пользователя
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
+    # Опциональные поля при создании пользователя
+    invest_token: Optional[str] = None
+    telegram_id: Optional[str] = None
 
 
 # Схема для обновления пользователя
@@ -20,6 +23,8 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
     password: Optional[str] = None
+    invest_token: Optional[str] = None
+    telegram_id: Optional[str] = None
 
 
 # Схема для входа
@@ -43,6 +48,8 @@ class TokenData(BaseModel):
 class User(UserBase):
     id: UUID
     is_active: bool
+    invest_token: Optional[str] = None
+    telegram_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

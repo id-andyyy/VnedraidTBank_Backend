@@ -3,6 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_active_user
@@ -130,5 +131,43 @@ def update_my_profile(
     
     # Обновляем профиль
     user = update_user(db, current_user.id, user_in)
+    
+    return user
+
+
+class InvestTokenUpdate(BaseModel):
+    invest_token: str
+
+
+@auth_router.put("/me/invest-token", response_model=UserSchema)
+def update_invest_token(
+    token_data: InvestTokenUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Обновление токена инвестиций пользователя.
+    """
+    user_update = UserUpdate(invest_token=token_data.invest_token)
+    user = update_user(db, current_user.id, user_update)
+    
+    return user
+
+
+class TelegramIdUpdate(BaseModel):
+    telegram_id: str
+
+
+@auth_router.put("/me/telegram-id", response_model=UserSchema)
+def update_telegram_id(
+    telegram_data: TelegramIdUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    Обновление Telegram ID пользователя.
+    """
+    user_update = UserUpdate(telegram_id=telegram_data.telegram_id)
+    user = update_user(db, current_user.id, user_update)
     
     return user 

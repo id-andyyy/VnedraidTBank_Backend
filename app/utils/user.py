@@ -38,6 +38,8 @@ def create_user(db: Session, user_in: UserCreate) -> User:
         username=user_in.username,
         hashed_password=get_password_hash(user_in.password),
         is_active=True,
+        invest_token=user_in.invest_token,
+        telegram_id=user_in.telegram_id,
     )
     
     db.add(user)
