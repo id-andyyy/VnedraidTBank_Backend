@@ -1,6 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from tinkoff.invest import MoneyValue, OrderDirection, OrderType, Quotation
+from tinkoff.invest import (
+    InstrumentIdType,
+    InstrumentStatus,
+    MoneyValue,
+    OrderDirection,
+    OrderType,
+    Quotation,
+    SecurityTradingStatus,
+)
 from tinkoff.invest.sandbox.client import SandboxClient
 from enum import Enum
 
@@ -294,15 +302,64 @@ async def post_sandbox_order(
                 target_account_id = accounts[0].id
 
             # Ищем инструмент по тикеру, чтобы получить FIGI
-            instrument_response = client.instruments.find_instrument(
+            find_instrument_response = client.instruments.find_instrument(
                 query=payload.ticker)
-            found_instruments = instrument_response.instruments
+
+            found_instruments = find_instrument_response.instruments
             if not found_instruments:
                 raise HTTPException(
-                    status_code=404, detail=f"Instrument with ticker '{payload.ticker}' not found.")
+                    status_code=404, detail=f"Instrument with ticker '{payload.ticker}' not found."
+                )
 
-            # Для простоты берем первый найденный инструмент
+            # Получаем полную информацию по первому найденному инструменту
             figi = found_instruments[0].figi
+            instrument_details_response = client.instruments.get_instrument_by(
+                id_type=InstrumentIdType.INSTRUMENT_ID_TYPE_FIGI,
+                id=figi,
+            )
+            instrument = instrument_details_response.instrument
+
+            # Проверяем, доступен ли инструмент для торгов
+            is_tradable = (
+                instrument.trading_status == SecurityTradingStatus.SECURITY_TRADING_STATUS_NORMAL_TRADING and
+                instrument.buy_available_flag and
+                instrument.sell_available_flag
+            )
+            if not is_tradable:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Instrument '{payload.ticker}' is found, but not available for trading now."
+                )
+
+            # Проверяем баланс перед покупкой
+            if payload.direction == OrderDirectionEnum.BUY:
+                positions = client.sandbox.get_sandbox_positions(
+                    account_id=target_account_id)
+                rub_balance = 0.0
+                for money_val in positions.money:
+                    if money_val.currency == 'rub':
+                        rub_balance = _money_value_to_float(money_val)
+                        break
+
+                order_cost = 0.0
+                if payload.price:  # Лимитная заявка
+                    order_cost = payload.price * payload.quantity * instrument.lot
+                else:  # Рыночная заявка, считаем примерную стоимость
+                    last_prices = client.market_data.get_last_prices(figi=[
+                                                                     figi])
+                    if not last_prices.last_prices:
+                        raise HTTPException(
+                            status_code=400, detail=f"Could not get market price for {payload.ticker}.")
+
+                    last_price_q = last_prices.last_prices[0].price
+                    last_price_f = last_price_q.units + last_price_q.nano / 1e9
+                    # Добавляем 5% запаса на волатильность
+                    estimated_price = last_price_f * 1.05
+                    order_cost = estimated_price * payload.quantity * instrument.lot
+
+                if rub_balance < order_cost:
+                    error_msg = f"Insufficient funds. Required: ~{order_cost:.2f} RUB, available: {rub_balance:.2f} RUB."
+                    raise HTTPException(status_code=400, detail=error_msg)
 
             order_direction = (
                 OrderDirection.ORDER_DIRECTION_BUY
@@ -336,6 +393,53 @@ async def post_sandbox_order(
                 "executed_lots": order_response.lots_executed,
                 "total_order_amount": _money_value_to_float(order_response.total_order_amount),
             }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An error occurred with Tinkoff API: {e}")
+
+
+@invest_router.get(
+    "/sandbox/tradable-shares",
+    summary="Получить список доступных для торговли акций",
+    tags=["Tinkoff Invest"],
+    response_description="Список акций, доступных для торговли в песочнице",
+)
+async def get_tradable_shares(
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Возвращает список акций, которыми можно торговать в данный момент
+    в песочнице (статус NORMAL_TRADING, разрешена покупка/продажа).
+    Возвращает не более 20 инструментов.
+    """
+    if not current_user.invest_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Tinkoff API token is not configured for the user."
+        )
+
+    try:
+        with SandboxClient(token=current_user.invest_token) as client:
+            shares_response = client.instruments.shares(
+                instrument_status=InstrumentStatus.INSTRUMENT_STATUS_BASE
+            )
+
+            tradable_shares = []
+            for share in shares_response.instruments:
+                if (share.trading_status == SecurityTradingStatus.SECURITY_TRADING_STATUS_NORMAL_TRADING and
+                    share.buy_available_flag and
+                    share.sell_available_flag and
+                        share.currency == 'rub'):
+                    tradable_shares.append({
+                        "ticker": share.ticker,
+                        "figi": share.figi,
+                        "name": share.name,
+                        "lot": share.lot,
+                    })
+                if len(tradable_shares) >= 20:
+                    break
+
+            return tradable_shares
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"An error occurred with Tinkoff API: {e}")
