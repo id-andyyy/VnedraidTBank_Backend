@@ -18,7 +18,7 @@ Please process the news data as follows:
 
 - **Deduplication**: Compare incoming news items for similarity. If multiple entries cover the same event, merge them into a single, comprehensive entry with the most accurate title and description.  
 
-- **Output Format**: Deliver the processed data in a structured JSON format with the following schema:  
+- **Output Format**: Deliver the processed data in a structured JSON format with the following schema and respond only in russian:  
   ```json  
   {  
     "title": "string",  
