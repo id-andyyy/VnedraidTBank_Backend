@@ -8,8 +8,8 @@ from sqlalchemy.exc import IntegrityError
 from app.api.routes import main_router
 
 app = FastAPI(
-    title="HUETA",
-    description="HUETA",
+    title="Mojarung Investments API",
+    description="API for Mojarung Investments, providing access to financial data and analytics.",
     version="0.1.0"
 )
 
