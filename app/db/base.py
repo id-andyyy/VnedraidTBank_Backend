@@ -1,5 +1,4 @@
-from sqlalchemy.orm import DeclarativeBase
+# Импорт базового класса
+from app.db.base_class import Base
 
-
-class Base(DeclarativeBase):
-    pass
+# Импорт всех моделей происходит в другом месте
