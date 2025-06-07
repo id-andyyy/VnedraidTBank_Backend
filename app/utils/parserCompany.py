@@ -52,6 +52,54 @@ def fetch_tradingview_page(url="https://ru.tradingview.com/markets/stocks-russia
         print(f"Ошибка при загрузке страницы: {e}")
         return None
 
+def get_company_image(company_url):
+    """
+    Извлекает URL изображения компании с её страницы на TradingView.
+    
+    Args:
+        company_url (str): URL страницы компании на TradingView
+        
+    Returns:
+        str: URL изображения компании или None, если изображение не найдено
+    """
+    try:
+        html_content = fetch_tradingview_page(company_url)
+        if not html_content:
+            return None
+            
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Ищем изображение компании
+        # TradingView обычно размещает логотип компании в мета-тегах или в специальных контейнерах
+        # Попробуем несколько вариантов поиска
+        
+        # Вариант 1: Поиск в мета-тегах OpenGraph
+        og_image = soup.find('meta', property='og:image')
+        if og_image and og_image.get('content'):
+            return og_image.get('content')
+            
+        # Вариант 2: Поиск изображения в контейнере с информацией о компании
+        image_container = soup.select_one('.tv-symbol-header__logo-container img')
+        if image_container and image_container.get('src'):
+            src = image_container.get('src')
+            # Проверяем, если это относительный URL, делаем его абсолютным
+            if src.startswith('/'):
+                return f"https://ru.tradingview.com{src}"
+            return src
+            
+        # Вариант 3: Поиск в основном контейнере с информацией о компании
+        company_image = soup.select_one('.tv-circle-logo__image')
+        if company_image and company_image.get('src'):
+            src = company_image.get('src')
+            if src.startswith('/'):
+                return f"https://ru.tradingview.com{src}"
+            return src
+            
+        return None
+    except Exception as e:
+        print(f"Ошибка при получении изображения компании: {e}")
+        return None
+
 def parse_tradingview_stocks(html_content=None):
     """
     Парсит информацию о российских акциях с TradingView.
@@ -90,11 +138,15 @@ def parse_tradingview_stocks(html_content=None):
         company_name_elem = link.find_next('sup', class_='apply-common-tooltip')
         company_name = company_name_elem.get('title') if company_name_elem else "Название не найдено"
         
-        stocks_data.append({
+        # Создаем запись о компании
+        company_data = {
             'ticker': ticker,
             'company_name': company_name,
             'link': full_url
-        })
+        }
+        
+        # Добавляем в список
+        stocks_data.append(company_data)
     
     return stocks_data
 
@@ -108,9 +160,20 @@ def main():
         
         # Выводим первые 10 компаний для примера
         print("\nПример данных (первые 10 компаний):")
-        for i, stock in enumerate(stocks_data):
+        for i, stock in enumerate(stocks_data[:10]):
             print(f"{i+1}. {stock['ticker']} - {stock['company_name']}")
             print(f"   Ссылка: {stock['link']}")
+            
+            # Получаем и выводим URL изображения для первых 3-х компаний
+            if i < 3:
+                print("   Получение изображения...")
+                image_url = get_company_image(stock['link'])
+                if image_url:
+                    print(f"   Изображение: {image_url}")
+                else:
+                    print("   Изображение не найдено")
+                # Добавляем небольшую задержку
+                time.sleep(2)
     else:
         print("Не удалось получить данные о компаниях")
 

@@ -16,3 +16,6 @@ main_router.include_router(auth_router, prefix="/api/auth", tags=["Auth 🔑"])
 main_router.include_router(
     tradingview_router, prefix="/api/tradingview", tags=["TradingView 📈"]
 )
+main_router.include_router(
+    parsers_router, prefix="/api/parsers", tags=["Parsers 🔍"]
+)

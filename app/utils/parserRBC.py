@@ -43,14 +43,14 @@ def get_news_data():
             logger.warning("Новостная лента пуста. Возможно, контент загружается динамически (через JS).")
             return []
 
-        # Ограничимся 10 новостями для примера
+        # Ограничимся 2 новостями для примера
         for i, link_tag in enumerate(news_links[:10]):
             href = link_tag.get('href')
             if not href:
                 continue
 
             url = href if href.startswith('http') else f"https://www.rbc.ru{href}"
-            logger.info(f"[{i+1}/{len(news_links[:10])}] Парсинг статьи: {url}")
+            logger.info(f"[{i+1}/2] Парсинг статьи: {url}")
 
             try:
                 article_response = requests.get(url, headers=HEADERS, timeout=10)

@@ -11,6 +11,7 @@ class NewsArticleBase(BaseModel):
     full_text: str
     summary: str
     is_positive: bool
+    is_ai_generated: bool
     tags: Optional[str] = None
 
     class Config:

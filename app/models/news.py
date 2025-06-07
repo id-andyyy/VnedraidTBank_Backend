@@ -16,6 +16,7 @@ class NewsArticle(Base):
     full_text: Mapped[str] = mapped_column(Text, comment="Полный, объединенный текст новости")
     summary: Mapped[str] = mapped_column(Text, comment="Краткое содержание статьи от LLM")
     is_positive: Mapped[bool] = mapped_column(Boolean, comment="Тональность новости (True - позитивная)")
+    is_ai_generated: Mapped[bool] = mapped_column(Boolean, comment="Определено ли как AI-генерированный контент")
     tags: Mapped[str] = mapped_column(String(500), nullable=True, comment="Теги, присвоенные LLM")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

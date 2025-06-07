@@ -36,27 +36,40 @@ def generate_response_sync(prompt, model="deepseek-ai/DeepSeek-V3-0324", max_tok
     }
 
     full_response = ""
-    response = requests.post(url, headers=headers, json=data, stream=True)
-    for line in response.iter_lines():
-        if line:
-            try:
-                line_text = line.decode('utf-8')
-                if line_text.startswith('data: '):
-                    line_text = line_text[6:]
-                if line_text.strip() and line_text != '[DONE]':
-                    parsed = json.loads(line_text)
-                    content = parsed.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                    if content:
-                        full_response += content
-            except json.JSONDecodeError:
-                if line_text.strip() == '[DONE]':
-                    break
-                continue
-            except Exception as e:
-                logger.error(f"Error parsing LLM response: {str(e)}")
-                continue
-
-    return full_response
+    try:
+        response = requests.post(url, headers=headers, json=data, stream=True, timeout=60)
+        response.raise_for_status()
+        
+        for line in response.iter_lines():
+            if line:
+                try:
+                    line_text = line.decode('utf-8')
+                    if line_text.startswith('data: '):
+                        line_text = line_text[6:]
+                    if line_text.strip() and line_text != '[DONE]':
+                        parsed = json.loads(line_text)
+                        content = parsed.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                        if content:
+                            full_response += content
+                except json.JSONDecodeError:
+                    if line_text.strip() == '[DONE]':
+                        break
+                    continue
+                except Exception as e:
+                    logger.error(f"Error parsing LLM response line: {str(e)}")
+                    continue
+        
+        if not full_response.strip():
+            logger.error("LLM returned empty response")
+            
+        return full_response
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in LLM API: {str(e)}")
+        return ""
+    except Exception as e:
+        logger.error(f"Unexpected error in LLM API: {str(e)}")
+        return ""
 
 
 @llm_router.post('', response_model=LLMResponse)
