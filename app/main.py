@@ -4,11 +4,11 @@ import logging
 
 from sqlalchemy.exc import IntegrityError
 
-from app.api.routes import main_router
+# from app.api.routes import main_router
 
 app = FastAPI(
-    title="",
-    description="",
+    title="HUETA",
+    description="HUETA",
     version="0.1.0"
 )
 
@@ -21,7 +21,7 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
     )
 
 
-app.include_router(main_router)
+# app.include_router(main_router)
 
 
 @app.get(
