@@ -19,6 +19,8 @@ main_router.include_router(
 main_router.include_router(news_router, prefix="/api/news", tags=["News 🗞️"])
 main_router.include_router(
     invest_router, prefix="/api/invest", tags=["Invest 💸"])
+main_router.include_router(recommendation_router,
+                           prefix="/api/assistant", tags=["Assistant 🤖"])
 main_router.include_router(
     tradingview_router, prefix="/api/tradingview", tags=["Companies parsers 🏢"])
 main_router.include_router(
@@ -26,5 +28,3 @@ main_router.include_router(
 )
 main_router.include_router(pulse_router, prefix="/api/pulse", tags=["Pulse 💬"])
 main_router.include_router(llm_router, prefix="/api/llm", tags=["LLM 🗄️"])
-main_router.include_router(recommendation_router,
-                           prefix="/api/assistant", tags=["Assistant 🤖"])

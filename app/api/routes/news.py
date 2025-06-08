@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 from sqlalchemy import or_
@@ -53,6 +54,28 @@ def read_news(
 
     news_list = query.order_by(NewsArticle.created_at.desc()).limit(top).all()
     return news_list
+
+
+@news_router.get(
+    "/latest-24h",
+    response_model=List[NewsArticleInDB],
+    summary="Получить новости за последние 24 часа"
+)
+def get_latest_news_24h(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Возвращает список новостей, опубликованных за последние 24 часа.
+    """
+    time_24_hours_ago = datetime.utcnow() - timedelta(hours=24)
+
+    latest_news = db.query(NewsArticle)\
+        .filter(NewsArticle.created_at >= time_24_hours_ago)\
+        .order_by(NewsArticle.created_at.desc())\
+        .all()
+
+    return latest_news
 
 
 @news_router.get("/{news_id}", response_model=NewsArticleInDB, summary="Получить новость по ID")
