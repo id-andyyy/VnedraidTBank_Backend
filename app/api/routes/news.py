@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Query, Depends, HTTPException
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -26,31 +26,47 @@ def read_news(
                          description="Количество новостей для возврата"),
         filter: Optional[bool] = Query(
             None, description="Фильтровать новости по интересам пользователя"),
+        tickers: Optional[List[str]] = Query(
+            None, description="Фильтровать по списку тикеров"),
+        tags: Optional[List[str]] = Query(
+            None, description="Фильтровать по списку тегов"),
 ):
     """
     Получение списка новостей.
     """
     query = db.query(NewsArticle)
+    all_conditions = []
 
     if filter and current_user:
-        conditions = []
+        user_conditions = []
 
         user_interested_tags = [
             tag_name for field, tag_name in TAG_MAP.items() if getattr(current_user, field, -2) >= -1
         ]
 
         if user_interested_tags:
-            conditions.append(
+            user_conditions.append(
                 or_(*[NewsArticle.tags.contains(tag) for tag in user_interested_tags]))
 
         if current_user.tickers:
             user_tickers = [ticker.strip()
                             for ticker in current_user.tickers.split(',')]
-            conditions.append(
+            user_conditions.append(
                 or_(*[NewsArticle.tickers.contains(ticker) for ticker in user_tickers]))
 
-        if conditions:
-            query = query.filter(or_(*conditions))
+        if user_conditions:
+            all_conditions.append(or_(*user_conditions))
+
+    if tickers:
+        all_conditions.append(
+            or_(*[NewsArticle.tickers.contains(ticker) for ticker in tickers]))
+
+    if tags:
+        all_conditions.append(
+            or_(*[NewsArticle.tags.contains(tag) for tag in tags]))
+
+    if all_conditions:
+        query = query.filter(and_(*all_conditions))
 
     news_list = query.order_by(NewsArticle.created_at.desc()).limit(top).all()
     return news_list
