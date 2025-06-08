@@ -182,24 +182,32 @@ def process_single_news_with_llm(news_item: Dict[str, str]) -> Dict[str, Any]:
         return None
 
 
-def find_mentioned_tickers(text: str, companies: List[tuple]) -> List[str]:
+def find_mentioned_tickers(text_to_search: str, companies_from_db: List[tuple]) -> List[str]:
     """
-    Находит в тексте упоминания компаний из списка и возвращает их тикеры.
-    Поиск идет по названию компании и по тикеру (как отдельное слово).
+    Находит в тексте упоминания компаний из списка, используя их очищенные имена и тикеры.
+
+    Args:
+        text_to_search: Текст новости (заголовок + содержание).
+        companies_from_db: Список кортежей (ticker, clean_company_name).
     """
     found_tickers = set()
-    if not text:
+    if not text_to_search:
         return []
-    text_lower = text.lower()
 
-    for ticker, company_name in companies:
-        # Проверка по названию компании (простой поиск подстроки)
-        if company_name and company_name.lower() in text_lower:
-            found_tickers.add(ticker)
+    text_lower = text_to_search.lower()
 
-        # Проверка по тикеру (с учетом границ слова, чтобы не находить тикер как часть другого слова)
-        if ticker and re.search(r'\b' + re.escape(ticker.lower()) + r'\b', text_lower):
-            found_tickers.add(ticker)
+    for ticker, company_name in companies_from_db:
+        # Составляем список алиасов для поиска: тикер и чистое имя
+        search_terms = {ticker.lower()}
+        if company_name:
+            search_terms.add(company_name.lower())
+
+        for term in search_terms:
+            # Ищем точное совпадение слова, чтобы избежать частичных вхождений
+            # (например, чтобы "фин" не находило "финансы")
+            if re.search(r'\b' + re.escape(term) + r'\b', text_lower):
+                found_tickers.add(ticker)
+                break  # Если нашли, переходим к следующей компании
 
     return list(found_tickers)
 
@@ -243,11 +251,9 @@ def run_all_parsers_and_process():
     """
     logger.info("Запуск парсинга и обработки новостей...")
 
-    # Получаем сессию БД
     db = SessionLocal()
-
     try:
-        # Загружаем все компании из БД один раз
+        # Загружаем все компании c очищенными именами из БД один раз
         logger.info("Загрузка списка компаний из базы данных...")
         companies_for_search = db.query(
             TradingViewCompany.ticker, TradingViewCompany.company_name).all()
@@ -354,7 +360,7 @@ def run_all_parsers_and_process():
             processed_news = process_single_news_with_llm(news_item)
 
             if processed_news:
-                # Находим упомянутые тикеры
+                # Находим упомянутые тикеры, используя очищенные имена
                 full_text_for_search = processed_news.get(
                     'title', '') + ' ' + processed_news.get('full_text', '')
                 found_tickers = find_mentioned_tickers(
@@ -367,7 +373,6 @@ def run_all_parsers_and_process():
                 else:
                     processed_news['tickers'] = []
 
-                # Сохраняем в БД
                 if save_news_to_db(processed_news, db):
                     processed_count += 1
             else:
