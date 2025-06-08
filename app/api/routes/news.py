@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Query
-from fastapi.params import Depends
+from fastapi import APIRouter, Query, Depends, HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
+from starlette import status
 
 from app.api.deps import get_db, get_current_active_user
 from app.core.constants import TAG_MAP
@@ -53,3 +53,22 @@ def read_news(
 
     news_list = query.order_by(NewsArticle.created_at.desc()).limit(top).all()
     return news_list
+
+
+@news_router.get("/{news_id}", response_model=NewsArticleInDB, summary="Получить новость по ID")
+def get_news_by_id(
+    news_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Получает одну новостную статью по её уникальному идентификатору.
+    """
+    news_article = db.query(NewsArticle).filter(
+        NewsArticle.id == news_id).first()
+    if not news_article:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Новость с ID {news_id} не найдена"
+        )
+    return news_article
