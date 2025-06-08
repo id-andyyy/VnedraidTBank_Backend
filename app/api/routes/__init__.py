@@ -8,6 +8,7 @@ from app.api.routes.auth import auth_router
 from app.api.routes.tradingview import tradingview_router
 from app.api.routes.parsers import parsers_router
 from app.api.routes.users import users_router
+from app.api.routes.recommendations import recommendation_router
 
 main_router = APIRouter()
 
@@ -24,4 +25,6 @@ main_router.include_router(
     parsers_router, prefix="/api/parsers", tags=["News parsers 🔍"]
 )
 main_router.include_router(pulse_router, prefix="/api/pulse", tags=["Pulse 💬"])
-main_router.include_router(llm_router, prefix="/api/llm", tags=["LLM 🤖"])
+main_router.include_router(llm_router, prefix="/api/llm", tags=["LLM 🗄️"])
+main_router.include_router(recommendation_router,
+                           prefix="/api/assistant", tags=["Assistant 🤖"])
