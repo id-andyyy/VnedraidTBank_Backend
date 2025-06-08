@@ -17,7 +17,7 @@ app = FastAPI(
 
 origins = [
     "http://localhost:5173",  # Адрес для локальной разработки Svelte
-    "https://mojarung-vnedraid-tbank-frontend-9d2e.twc1.net",
+    "http://5.129.223.25:3000",
 ]
 
 # Добавление CORS middleware с правильными настройками
