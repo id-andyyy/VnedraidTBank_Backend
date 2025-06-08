@@ -2,7 +2,7 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy import inspect
 from sqlalchemy.schema import CreateTable
-# Настройка логирования
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
