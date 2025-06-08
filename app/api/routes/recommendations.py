@@ -10,7 +10,7 @@ from app.api.deps import get_db, get_current_active_user
 from app.core.constants import TAG_MAP
 from app.models import User
 from app.models.news import NewsArticle
-from app.schemas.recommendations import RecommendationResponse
+from app.schemas.recommendations import RecommendationResponse, NewsAssistantRequest, NewsAssistantResponse
 
 LLM_API_KEY = 'cpk_b9f646794b554414935934ec5a3513de.f78245306f06593ea49ef7bce2228c8e.kHJVJjyK8dtqB0oD2Ofv4AaME6MSnKDy'
 LLM_URL = 'https://llm.chutes.ai/v1/chat/completions'
@@ -229,3 +229,82 @@ def get_recommendation_for_news(
     logger.info(
         f"Successfully generated recommendation for news_id={news_id}. Response: {response_data.json()}")
     return response_data
+
+
+def _build_assistant_prompt(news_text: str, question: str) -> str:
+    """
+    Создает промпт для LLM-ассистента по новостям.
+    """
+    return f"""
+Ты — полезный ассистент, который помогает пользователям понять новостные статьи.
+Твоя задача — ответить на вопрос пользователя, основываясь ИСКЛЮЧИТЕЛЬНО на тексте предоставленной новости.
+Не придумывай информацию и не используй свои общие знания. Если ответ на вопрос не содержится в тексте, прямо сообщи об этом.
+
+**Текст новости:**
+---
+{news_text}
+---
+
+**Вопрос пользователя:**
+{question}
+
+**Твой ответ:**
+"""
+
+
+def _generate_assistant_response(prompt: str) -> str:
+    """
+    Выполняет вызов к LLM API для получения текстового ответа.
+    """
+    headers = {
+        'Authorization': f'Bearer {LLM_API_KEY}',
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'model': "deepseek-ai/DeepSeek-V3-0324",
+        'messages': [{'role': 'user', 'content': prompt}],
+        'stream': False,
+        'max_tokens': 1500,
+        'temperature': 0.3,
+    }
+
+    try:
+        response = requests.post(
+            LLM_URL, headers=headers, json=data, timeout=90)
+        response.raise_for_status()
+        response_data = response.json()
+        answer = response_data['choices'][0]['message']['content']
+        return answer.strip()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Ошибка запроса к LLM API для ассистента: {e}")
+        raise HTTPException(
+            status_code=502, detail="Ошибка при обращении к языковой модели.")
+    except (KeyError, IndexError) as e:
+        logger.error(f"Ошибка парсинга ответа от LLM: {e}")
+        raise HTTPException(
+            status_code=500, detail="Некорректный ответ от языковой модели.")
+    except Exception as e:
+        logger.error(f"Непредвиденная ошибка в LLM API ассистента: {e}")
+        raise HTTPException(
+            status_code=500, detail="Внутренняя ошибка сервера.")
+
+
+@recommendation_router.post(
+    "/assistant/ask",
+    response_model=NewsAssistantResponse,
+    summary="Задать вопрос по тексту новости"
+)
+def ask_news_assistant(request: NewsAssistantRequest):
+    """
+    Принимает текст новости и вопрос пользователя, возвращает ответ от LLM.
+    """
+    logger.info(
+        f"Received question for news assistant: '{request.question[:50]}...'")
+
+    prompt = _build_assistant_prompt(request.news_text, request.question)
+    logger.debug(f"Built prompt for assistant: {prompt[:200]}...")
+
+    answer = _generate_assistant_response(prompt)
+    logger.info("Successfully generated answer from assistant.")
+
+    return NewsAssistantResponse(answer=answer)

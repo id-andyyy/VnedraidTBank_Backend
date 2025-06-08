@@ -9,3 +9,12 @@ class RecommendationResponse(BaseModel):
     reasoning: str
     ticker: Optional[str] = None
     quantity: Optional[int] = None
+
+
+class NewsAssistantRequest(BaseModel):
+    news_text: str
+    question: str
+
+
+class NewsAssistantResponse(BaseModel):
+    answer: str
