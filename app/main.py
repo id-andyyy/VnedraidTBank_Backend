@@ -11,7 +11,8 @@ from app.api.routes import main_router
 app = FastAPI(
     title="Mojarung Investments API",
     description="API for Mojarung Investments, providing access to financial data and analytics.",
-    version="0.1.0"
+    version="0.1.0",
+    debug=True,
 )
 
 origins = [
