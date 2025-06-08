@@ -14,6 +14,20 @@ app = FastAPI(
     version="0.1.0"
 )
 
+origins = [
+    "http://localhost:5173/",  # Адрес для локальной разработки Svelte
+    # Если у вас есть другие адреса, добавьте их сюда
+]
+
+# Добавление CORS middleware с правильными настройками
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # <<< ИЗМЕНЕНО: используем список доверенных доменов
+    allow_credentials=True,      # <<< ВЕРНО: разрешаем cookie
+    allow_methods=["*"],         # Разрешаем все методы
+    allow_headers=["*"],         # Разрешаем все заголовки
+)
+
 # Добавление CORS middleware для разрешения всех источников
 app.add_middleware(
     CORSMiddleware,
