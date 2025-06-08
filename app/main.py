@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import logging
 
 from sqlalchemy.exc import IntegrityError
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import main_router
 
@@ -11,6 +12,15 @@ app = FastAPI(
     title="Mojarung Investments API",
     description="API for Mojarung Investments, providing access to financial data and analytics.",
     version="0.1.0"
+)
+
+# Добавление CORS middleware для разрешения всех источников
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
