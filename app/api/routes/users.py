@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -8,7 +8,8 @@ from app.api.deps import get_db, get_current_active_user
 from app.core.constants import TAG_MAP, FIELD_MAP
 from app.models import User
 from app.models.news import NewsArticle
-from app.schemas.users import UserInteractionRequest
+from app.models.tradingview import TradingViewCompany
+from app.schemas.users import UserInteractionRequest, AddTickerRequest
 
 users_router = APIRouter()
 
@@ -75,3 +76,57 @@ def dislike_news(
     db.add(current_user)
     db.commit()
     return {"message": "Dislike processed successfully"}
+
+
+@users_router.post("/me/tickers", status_code=status.HTTP_200_OK, summary="Добавить тикер компании в избранное")
+def add_ticker_to_favorites(
+    request: AddTickerRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Добавляет тикер компании в отслеживаемые пользователем.
+    """
+    company = db.query(TradingViewCompany).filter(
+        TradingViewCompany.id == request.company_id).first()
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+
+    user_tickers_str = current_user.tickers or ""
+    ticker_set = {t.strip() for t in user_tickers_str.split(',') if t.strip()}
+
+    ticker_set.add(company.ticker)
+
+    current_user.tickers = ", ".join(sorted(list(ticker_set)))
+    db.commit()
+
+    return {"tickers": current_user.tickers}
+
+
+@users_router.get("/me/tickers", response_model=Dict[str, str], summary="Получить избранные тикеры пользователя")
+def get_favorite_tickers(current_user: User = Depends(get_current_active_user)):
+    """
+    Возвращает строку с тикерами, отслеживаемыми пользователем.
+    """
+    return {"tickers": current_user.tickers or ""}
+
+
+@users_router.delete("/me/tickers/{ticker}", status_code=status.HTTP_200_OK, summary="Удалить тикер из избранного")
+def remove_ticker_from_favorites(
+    ticker: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Удаляет тикер из строки отслеживаемых пользователем.
+    """
+    user_tickers_str = current_user.tickers or ""
+    ticker_set = {t.strip() for t in user_tickers_str.split(',') if t.strip()}
+
+    ticker_set.discard(ticker)
+
+    current_user.tickers = ", ".join(sorted(list(ticker_set)))
+    db.commit()
+
+    return {"tickers": current_user.tickers}
