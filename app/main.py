@@ -22,19 +22,10 @@ origins = [
 # Добавление CORS middleware с правильными настройками
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # <<< ИЗМЕНЕНО: используем список доверенных доменов
-    allow_credentials=True,      # <<< ВЕРНО: разрешаем cookie
-    allow_methods=["*"],         # Разрешаем все методы
-    allow_headers=["*"],         # Разрешаем все заголовки
-)
-
-# Добавление CORS middleware для разрешения всех источников
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins,  # <<< ИЗМЕНЕНО: используем список доверенных доменов
+    allow_credentials=True,  # <<< ВЕРНО: разрешаем cookie
+    allow_methods=["*"],  # Разрешаем все методы
+    allow_headers=["*"],  # Разрешаем все заголовки
 )
 
 
