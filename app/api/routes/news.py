@@ -35,7 +35,7 @@ def read_news(
         conditions = []
 
         user_interested_tags = [
-            tag_name for field, tag_name in TAG_MAP.items() if getattr(current_user, field, -1) >= 0
+            tag_name for field, tag_name in TAG_MAP.items() if getattr(current_user, field, -2) >= -1
         ]
 
         if user_interested_tags:
