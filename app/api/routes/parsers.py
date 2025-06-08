@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from typing import Dict, Any, Callable, List
 import logging
@@ -10,6 +11,7 @@ from app.utils.parserRBC import get_news_data as rbc_parser
 from app.api.routes.llm import generate_response_sync
 # Импортируем модели и схемы для работы с БД
 from app.db.session import SessionLocal
+from app.models.tradingview import TradingViewCompany
 from app.schemas.news import NewsArticleCreate, RawNewsCreate
 from app.models.news import NewsArticle, RawNews
 # Импортируем функцию дедупликации
@@ -180,6 +182,28 @@ def process_single_news_with_llm(news_item: Dict[str, str]) -> Dict[str, Any]:
         return None
 
 
+def find_mentioned_tickers(text: str, companies: List[tuple]) -> List[str]:
+    """
+    Находит в тексте упоминания компаний из списка и возвращает их тикеры.
+    Поиск идет по названию компании и по тикеру (как отдельное слово).
+    """
+    found_tickers = set()
+    if not text:
+        return []
+    text_lower = text.lower()
+
+    for ticker, company_name in companies:
+        # Проверка по названию компании (простой поиск подстроки)
+        if company_name and company_name.lower() in text_lower:
+            found_tickers.add(ticker)
+
+        # Проверка по тикеру (с учетом границ слова, чтобы не находить тикер как часть другого слова)
+        if ticker and re.search(r'\b' + re.escape(ticker.lower()) + r'\b', text_lower):
+            found_tickers.add(ticker)
+
+    return list(found_tickers)
+
+
 def save_news_to_db(processed_news: Dict[str, Any], db_session):
     """
     Сохраняет обработанную новость в базу данных.
@@ -189,13 +213,17 @@ def save_news_to_db(processed_news: Dict[str, Any], db_session):
         tags_str = ", ".join(processed_news.get("tags", [])) if isinstance(
             processed_news.get("tags"), list) else processed_news.get("tags", "")
 
+        # Обрабатываем тикеры
+        tickers_str = ", ".join(processed_news.get("tickers", []))
+
         news_article = NewsArticle(
             title=processed_news["title"],
             full_text=processed_news["full_text"],
             summary=processed_news["summary"],
             is_positive=processed_news["is_positive"],
             is_ai_generated=processed_news.get("is_ai_generated", False),
-            tags=tags_str
+            tags=tags_str,
+            tickers=tickers_str
         )
 
         db_session.add(news_article)
@@ -219,6 +247,13 @@ def run_all_parsers_and_process():
     db = SessionLocal()
 
     try:
+        # Загружаем все компании из БД один раз
+        logger.info("Загрузка списка компаний из базы данных...")
+        companies_for_search = db.query(
+            TradingViewCompany.ticker, TradingViewCompany.company_name).all()
+        logger.info(
+            f"Загружено {len(companies_for_search)} компаний для поиска в новостях.")
+
         # 1. Сбор данных из всех парсеров и проверка дубликатов
         unique_news = []
         total_parsed = 0
@@ -319,6 +354,19 @@ def run_all_parsers_and_process():
             processed_news = process_single_news_with_llm(news_item)
 
             if processed_news:
+                # Находим упомянутые тикеры
+                full_text_for_search = processed_news.get(
+                    'title', '') + ' ' + processed_news.get('full_text', '')
+                found_tickers = find_mentioned_tickers(
+                    full_text_for_search, companies_for_search)
+
+                if found_tickers:
+                    logger.info(
+                        f"Найдены тикеры в новости: {', '.join(found_tickers)}")
+                    processed_news['tickers'] = found_tickers
+                else:
+                    processed_news['tickers'] = []
+
                 # Сохраняем в БД
                 if save_news_to_db(processed_news, db):
                     processed_count += 1
