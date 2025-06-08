@@ -96,12 +96,10 @@ def login(
         key="access_token",
         value=access_token,
         httponly=True,
-        # secure=True необходимо для samesite="none".
-        # Браузеры не установят cookie с samesite="none" без secure=True.
-        # Это означает, что и фронтенд, и бэкенд должны работать по HTTPS.
-        # Для локальной разработки по HTTP это будет проблемой.
-        secure=True,
-        samesite="none",
+        # Для локальной разработки по HTTP secure должно быть False.
+        # samesite='lax' - хороший стандарт для работы через прокси.
+        secure=False,
+        samesite="lax",
         max_age=int(access_token_expires.total_seconds()),
         path="/"
     )
