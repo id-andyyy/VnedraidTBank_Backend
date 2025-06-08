@@ -36,7 +36,7 @@ def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Пользователь с таким email уже существует",
         )
-    
+
     # Проверяем, существует ли пользователь с таким username
     user = get_user_by_username(db, user_in.username)
     if user:
@@ -44,10 +44,10 @@ def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Пользователь с таким именем уже существует",
         )
-    
+
     # Создаем пользователя
     user = create_user(db, user_in)
-    
+
     return user
 
 
@@ -58,17 +58,17 @@ def login(
 ) -> Any:
     """
     Вход в систему с получением JWT токена.
-    
+
     Примечание: В OAuth2PasswordRequestForm поле называется username, 
     но мы используем его для передачи email.
     """
     # Сначала пробуем найти пользователя по email
     user = get_user_by_email(db, form_data.username)
-    
+
     # Если пользователь не найден по email, пробуем найти по имени пользователя
     if not user:
         user = get_user_by_username(db, form_data.username)
-    
+
     # Если пользователь не найден или пароль неверный
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -76,27 +76,32 @@ def login(
             detail="Неверный email/имя пользователя или пароль",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Проверяем, активен ли пользователь
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Пользователь неактивен",
         )
-    
+
     # Создаем JWT токен
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         subject=user.id, expires_delta=access_token_expires
     )
-    
+
     # Устанавливаем JWT в куки
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,  # <<< ИЗМЕНИТЬ НА FALSE для HTTP
-        samesite="lax",  # 'lax' обычно безопаснее для начала, чем 'none'
+        # secure=True необходимо для samesite="none".
+        # Браузеры не установят cookie с samesite="none" без secure=True.
+        # Это означает, что и фронтенд, и бэкенд должны работать по HTTPS.
+        # Для локальной разработки по HTTP это будет проблемой.
+        secure=True,
+        samesite="none",
         max_age=int(access_token_expires.total_seconds()),
         path="/"
     )
@@ -131,7 +136,7 @@ def update_my_profile(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Пользователь с таким email уже существует",
             )
-    
+
     # Проверяем, не занят ли username, если он меняется
     if user_in.username and user_in.username != current_user.username:
         user = get_user_by_username(db, user_in.username)
@@ -140,10 +145,10 @@ def update_my_profile(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Пользователь с таким именем уже существует",
             )
-    
+
     # Обновляем профиль
     user = update_user(db, current_user.id, user_in)
-    
+
     return user
 
 
@@ -162,7 +167,7 @@ def update_invest_token(
     """
     user_update = UserUpdate(invest_token=token_data.invest_token)
     user = update_user(db, current_user.id, user_update)
-    
+
     return user
 
 
@@ -181,6 +186,5 @@ def update_telegram_id(
     """
     user_update = UserUpdate(telegram_id=telegram_data.telegram_id)
     user = update_user(db, current_user.id, user_update)
-    
-    return user
 
+    return user
