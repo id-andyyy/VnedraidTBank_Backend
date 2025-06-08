@@ -95,8 +95,8 @@ def login(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,  # Только по HTTPS
-        samesite="none",  # Для кросс-доменных запросов
+        secure=False,  # <<< ИЗМЕНИТЬ НА FALSE для HTTP
+        samesite="lax",  # 'lax' обычно безопаснее для начала, чем 'none'
         max_age=int(access_token_expires.total_seconds()),
         path="/"
     )
