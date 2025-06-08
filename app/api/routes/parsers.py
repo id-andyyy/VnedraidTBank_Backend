@@ -6,6 +6,8 @@ import logging
 
 # Импортируем функции парсеров
 from app.utils.parserRBC import get_news_data as rbc_parser
+from app.utils.parserBCS import get_news_data as bcs_parser
+from app.utils.parserInvesting import get_news_data as investing_parser
 # Импортируем обработчик LLM
 from app.api.routes.llm import generate_response_sync
 # Импортируем модели и схемы для работы с БД
@@ -32,6 +34,8 @@ ALLOWED_TAGS = [
 # --- РЕЕСТР ПАРСЕРОВ ---
 PARSERS_REGISTRY: Dict[str, Callable[[], List[Dict[str, str]]]] = {
     "rbc": rbc_parser,
+    "bcs_express": bcs_parser,
+    "investing": investing_parser,
     # Когда у вас появится новый парсер, например, vedomosti_parser,
     # вы просто добавите его сюда:
     # "vedomosti": vedomosti_parser,
