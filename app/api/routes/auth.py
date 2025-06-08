@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -53,6 +53,7 @@ def register(
 
 @auth_router.post("/login", response_model=Token)
 def login(
+    response: Response,
     db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     """
@@ -89,6 +90,17 @@ def login(
         subject=user.id, expires_delta=access_token_expires
     )
     
+    # Устанавливаем JWT в куки
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,  # Только по HTTPS
+        samesite="none",  # Для кросс-доменных запросов
+        max_age=int(access_token_expires.total_seconds()),
+        path="/"
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
