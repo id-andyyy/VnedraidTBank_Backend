@@ -8,7 +8,7 @@ import logging
 from app.db.session import SessionLocal
 from app.models.tradingview import TradingViewCompany
 from app.api.routes.llm import generate_response_sync
-from app.utils.parserCompany import parse_tradingview_stocks, get_company_image
+from app.utils.parser_company import parse_tradingview_stocks, get_company_image
 from app.core.constants import TAG_MAP
 
 # Создаем роутер

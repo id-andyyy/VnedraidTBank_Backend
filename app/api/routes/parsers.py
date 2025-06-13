@@ -5,9 +5,9 @@ from typing import Dict, Any, Callable, List
 import logging
 
 # Импортируем функции парсеров
-from app.utils.parserRBC import get_news_data as rbc_parser
-from app.utils.parserKommersant import get_news_data as kommersant_parser
-from app.utils.parserTradingView import get_news_data as tradingview_parser
+from app.utils.parser_rbc import get_news_data as rbc_parser
+from app.utils.parser_kommersant import get_news_data as kommersant_parser
+from app.utils.parser_trading_view import get_news_data as tradingview_parser
 # Импортируем обработчик LLM
 from app.api.routes.llm import generate_response_sync
 # Импортируем модели и схемы для работы с БД
@@ -15,7 +15,7 @@ from app.db.session import SessionLocal
 from app.schemas.news import NewsArticleCreate, RawNewsCreate
 from app.models.news import NewsArticle, RawNews
 # Импортируем функцию дедупликации
-from NoDuplicates import deduplicate_news_with_annoy
+from no_duplicates import deduplicate_news_with_annoy
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
